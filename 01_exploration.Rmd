@@ -1,0 +1,86 @@
+---
+title: "Initial exploration"
+author: "Diabb Zegpi D."
+date: "11-12-2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(here)
+
+col_spec <- cols(
+  VAR6_sum = col_double(),
+  VAR6_prom = col_double(),
+  VAR6_trx = col_double(),
+  VAR9_sum = col_double(),
+  VAR9_prom = col_double(),
+  VAR9_trx = col_double(),
+  VAR30_sum = col_double()
+)
+
+bci_train <- read_csv(here("Data", "train_data.csv"), col_types = col_spec)
+bci_test <- read_csv(here("Data", "test_data.csv"), col_types = col_spec)
+```
+
+
+## Training set
+
+- Total rows = 667691
+- Total cols = 70
+- Response = target_mes
+- VARx_sum = total mes
+- VARx_prom = promedio diario del mes
+- VARx_trx = total operaciones por mes
+- VARx_ratio = índice promedio por mes
+- There is a ton of missing data, due to lack of information of clients operations and lack of transactions.
+
+
+```{r}
+percentage <- function(x, ...) {
+  x %>% 
+    count(..., sort = TRUE) %>% 
+    mutate(pct = n / sum(n),
+           cum_pct = cumsum(pct))
+}
+
+bci_train %>% percentage(tipo_ban) # Class imabalance towards BAN1 (83%)
+bci_train %>% percentage(tipo_seg) # Maybe recode this col
+bci_train %>% percentage(categoria) # Few examples of V1
+bci_train %>% percentage(tipo_com) # All weel representated
+bci_train %>% percentage(tipo_cat) %>% print(n = Inf) # Maybe keep top 90%
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
