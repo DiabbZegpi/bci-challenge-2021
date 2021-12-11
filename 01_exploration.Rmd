@@ -140,9 +140,43 @@ bci_train %>%
 # VAR29_ratio has little zeros but many missing values.
 # All numeric variables should be transformed with the logarithm
 
+library(tidymodels)
+tidymodels_prefer()
+
+set.seed(123)
+bci_split <- initial_split(bci_train)
+train <- training(bci_split)
+test <- testing(bci_split)
+
+exclude_vars <- c("VAR14_sum", "VAR15_sum", "VAR18_sum", "VAR19_sum", 
+                  "VAR20_sum", "VAR21_sum", "VAR22_sum")
+
+lm_rec <- recipe(target_mes ~ ., data = train) %>% 
+  step_mutate(month = as.numeric(str_sub(mes, start = -2L)),
+              year = as.numeric(str_sub(mes, end = -3L)),
+              across(starts_with("VAR"), function(x) {
+                if_else(is.na(x), 0, x)
+              })) %>% 
+  step_rm(mes, all_of(exclude_vars)) %>% 
+  step_log(contains("sum"), offset = 1) %>% 
+  step_log(contains("prom"), offset = 1) %>% 
+  step_log(contains("trx"), offset = .01) %>% 
+  step_other(tipo_cat, threshold = .05, other = "RUBRO_otro") 
+  # step_dummy(all_nominal())
+
+
+
+lm_rec_prep <- lm_rec %>% prep()
+
+
+step_dummy(all_nominal()) %>% prep()
+
 ```
 
 
+```{r}
+
+```
 
 
 
