@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(here)
+theme_set(theme_minimal())
 
 col_spec <- cols(
   VAR6_sum = col_double(),
@@ -39,6 +40,13 @@ bci_test <- read_csv(here("Data", "test_data.csv"), col_types = col_spec)
 - VARx_trx = total operaciones por mes
 - VARx_ratio = índice promedio por mes
 - There is a ton of missing data, due to lack of information of clients operations and lack of transactions.
+- From the mes column can be extracted month and year.
+
+```{r}
+bci_train %>% 
+  mutate(month = as.numeric(str_sub(mes, start = -2L)),
+         year = as.numeric(str_sub(mes, end = -3L)))
+```
 
 
 ```{r}
@@ -57,12 +65,82 @@ bci_train %>% percentage(tipo_cat) %>% print(n = Inf) # Maybe keep top 90%
 ```
 
 
+```{r}
+bci_train %>% 
+  select(starts_with("VAR")) %>% 
+  summarise(across(.fns = function(x) sum(is.na(x)) / nrow(bci_train))) %>% 
+  pivot_longer(cols = everything()) %>% 
+  mutate(name = fct_reorder(name, -value)) %>% 
+  ggplot(aes(name, value)) +
+  geom_col(alpha = .8, fill = "deepskyblue4", color = "white") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(title = "Percentage of NA for each numeric variable",
+       x = NULL, y = "% of missing rows") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, margin = margin(-20)),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.y = element_blank())
+```
+
+All the numeric VARx like columns present, at least, 20% of missingness. 
 
 
+```{r}
+bci_train %>% 
+  select(contains("sum")) %>% 
+  pivot_longer(cols = everything()) %>%
+  mutate(name = fct_inorder(name),
+         value = value + 1) %>% 
+  na.omit() %>% 
+  ggplot(aes(value, ..density..)) +
+  geom_histogram(bins = 30) +
+  scale_x_log10() +
+  facet_wrap(~name, ncol = 6)
 
 
+bci_train %>% 
+  select(contains("prom")) %>% 
+  pivot_longer(cols = everything()) %>%
+  mutate(name = fct_inorder(name),
+         value = value + 1) %>% 
+  na.omit() %>% 
+  ggplot(aes(value, ..density..)) +
+  geom_histogram(bins = 30) +
+  scale_x_log10() +
+  facet_wrap(~name, ncol = 6)
 
 
+bci_train %>% 
+  select(contains("trx")) %>% 
+  pivot_longer(cols = everything()) %>%
+  mutate(name = fct_inorder(name),
+         value = value + .1) %>% 
+  na.omit() %>% 
+  ggplot(aes(value, ..density..)) +
+  geom_histogram(bins = 30) +
+  scale_x_log10() +
+  facet_wrap(~name, ncol = 6)
+
+
+bci_train %>% 
+  select(contains("ratio")) %>% 
+  na.omit() %>%
+  mutate(VAR29_ratio = VAR29_ratio + .001) %>% 
+  ggplot(aes(VAR29_ratio, ..density..)) +
+  geom_histogram(bins = 30) +
+  scale_x_log10() 
+```
+
+
+```{r}
+# Variables with too many zeros (sum)
+# "VAR14_sum", "VAR15_sum", "VAR18_sum", "VAR19_sum", 
+# "VAR20_sum", "VAR21_sum", "VAR22_sum"
+# prom variables don't have problems with zeros
+# There are many trx variables with a ton of zeros. A dummy can be made.
+# VAR29_ratio has little zeros but many missing values.
+# All numeric variables should be transformed with the logarithm
+
+```
 
 
 
